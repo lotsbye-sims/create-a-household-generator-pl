@@ -220,6 +220,9 @@ footer { color: var(--muted); font-size: .8rem; text-align: center; padding-top:
 .member .role { font: italic 400 .84rem var(--f-sub); color: var(--sage-light); }
 .member .extra { margin: 0; font-size: .82rem; color: var(--muted); }
 .member .extra b { color: var(--ink); font-weight: 500; }
+.member .asp { display: inline-flex; align-items: center; gap: .4rem; font-size: .84rem; color: var(--muted); }
+.member .asp svg.i { color: var(--blush); width: 1.05em; height: 1.05em; }
+.member .asp b { color: var(--blush); font-weight: 500; }
 .lot-traits { padding: .85rem .9rem; display: grid; gap: .5rem; }
 </style>
 </head>
@@ -231,7 +234,7 @@ footer { color: var(--muted); font-size: .8rem; text-align: center; padding-top:
     <span class="mark" data-icon="home" aria-hidden="true"></span>
     <h1>Meldunek Simów</h1>
     <p class="tagline">Generator rodzin do The Sims 4</p>
-    <p class="lede">Losuje gospodarstwo domowe, cechy każdego domownika i działkę, na którą się wprowadzą. Każdą część możesz przelosować osobno, a cechy jednej osoby zmienisz okrągłym przyciskiem przy jej imieniu.</p>
+    <p class="lede">Losuje gospodarstwo domowe, cechy każdego domownika i działkę, na którą się wprowadzą. Każdą część możesz przelosować osobno, a cechy i aspirację jednej osoby zmienisz okrągłym przyciskiem przy jej imieniu.</p>
   </header>
 
   <form class="toolbar glass" id="toolbar">
@@ -286,7 +289,7 @@ footer { color: var(--muted); font-size: .8rem; text-align: center; padding-top:
         <h3>Domownicy</h3>
         <div class="sec-actions">
           <button type="button" class="btn small" id="rerollFamily"><span data-icon="users"></span>Przelosuj rodzinę</button>
-          <button type="button" class="btn small" id="rerollTraits"><span data-icon="dice"></span>Przelosuj cechy</button>
+          <button type="button" class="btn small" id="rerollTraits"><span data-icon="dice"></span>Przelosuj cechy i aspiracje</button>
         </div>
       </div>
       <ol class="members" id="members"></ol>
@@ -476,6 +479,16 @@ const TODDLER_TRAITS = ['Angelic','Charmer','Clingy','Fussy','Independent','Inqu
 /* Cechy, których dziecko nie dostanie. Lista uproszczona. */
 const ADULT_ONLY = new Set(['Ambitious','Romantic','Unflirty','Noncommittal','Jealous','Family-Oriented','Hates Children','Childish','Bro','Dance Machine','Insider']);
 const TRAIT_COUNT = { infant: 1, toddler: 1, child: 1, teen: 2, ya: 3, adult: 3, elder: 3 };
+const ASPIRATIONS = ['Bodybuilder','Painter Extraordinaire','Musical Genius','Bestselling Author','Public Enemy','Chief of Mischief','Big Happy Family','Successful Lineage','Master Chef','Master Mixologist','Fabulously Wealthy','Mansion Baron','Renaissance Sim','Nerd Brain','Computer Whiz','Serial Romantic','Soulmate','Freelance Botanist','The Curator','Angling Ace','Joke Star','Party Animal','Friend of the World','Leader of the Pack'];
+const CHILD_ASPIRATIONS = ['Artistic Prodigy','Rambunctious Scamp','Social Butterfly','Whiz Kid'];
+function rollAspiration(stage, used) {
+  const pool = stage === 'child' ? CHILD_ASPIRATIONS : ['teen','ya','adult','elder'].includes(stage) ? ASPIRATIONS : null;
+  if (!pool) return null;
+  const free = used ? pool.filter(a => !used.has(a)) : pool;
+  const a = pick(free.length ? free : pool);
+  if (used) used.add(a);
+  return a;
+}
 
 const LOT_TRAITS = [
   ["Chef's Kitchen", null], ['Convivial', null], ['Fast Internet', null], ['Great Acoustics', null], ['Home Studio', null],
@@ -623,13 +636,13 @@ function specsFor(type, n) {
 
 function buildMembers(type, n) {
   const surname = pick(SURNAMES);
-  const used = new Set();
+  const used = new Set(), usedAsp = new Set();
   return specsFor(type, n).map(sp => {
     const g = Math.random() < .5 ? 'f' : 'm';
     const pool = namePool(g);
     let name; do { name = pick(pool); } while (used.has(name) && used.size < pool.length);
     used.add(name);
-    return { ...sp, g, name, surname: type === 'roommates' ? pick(SURNAMES) : surname, traits: rollTraits(sp.stage), ...details(sp.stage) };
+    return { ...sp, g, name, surname: type === 'roommates' ? pick(SURNAMES) : surname, traits: rollTraits(sp.stage), aspiration: rollAspiration(sp.stage, usedAsp), ...details(sp.stage) };
   });
 }
 
@@ -719,10 +732,11 @@ function render() {
       ${avatar(m.name, m.surname, i)}
       <div class="main">
         <div class="who"><span class="name">${esc(m.name)}${showSurname ? ' ' + esc(m.surname) : ''}</span><span class="role">${roleOf(m)} · ${stageOf(m)}</span></div>
+        ${m.aspiration ? `<span class="asp">${icon('star')}<span>Aspiracja: <b>${esc(m.aspiration)}</b></span></span>` : ''}
         <div class="traits">${m.traits.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
         ${extra.length ? `<p class="extra">${extra.join(' · ')}</p>` : ''}
       </div>
-      <button type="button" class="round-btn sm" data-reroll="${i}" aria-label="Przelosuj cechy: ${esc(m.name)}" title="Przelosuj cechy">${icon('refresh')}</button>
+      <button type="button" class="round-btn sm" data-reroll="${i}" aria-label="Przelosuj cechy i aspirację: ${esc(m.name)}" title="Przelosuj cechy i aspirację">${icon('refresh')}</button>
     </li>`;
   }).join('');
 
@@ -744,7 +758,7 @@ function asText() {
   lines.push('Plan na pierwszy rok: ' + state.story.plan);
   lines.push('', 'DOMOWNICY');
   state.members.forEach((m, i) => {
-    let l = `${i + 1}. ${m.name} ${m.surname}, ${roleOf(m).toLowerCase()}, ${stageOf(m).toLowerCase()}. Cechy: ${m.traits.join(', ')}.`;
+    let l = `${i + 1}. ${m.name} ${m.surname}, ${roleOf(m).toLowerCase()}, ${stageOf(m).toLowerCase()}. Cechy: ${m.traits.join(', ')}.${m.aspiration ? ' Aspiracja: ' + m.aspiration + '.' : ''}`;
     const ex = [];
     if (m.style) ex.push('styl: ' + m.style);
     if (m.like) ex.push('lubi: ' + m.like);
@@ -776,6 +790,7 @@ if (state && state.members && !state.members.every(m => namePool(m.g).includes(m
 
 setupPacks('meldunek-pl.off', () => off, v => { off = v; });
 if (!state || !state.members || !state.lot || !TYPES[state.type]) { newHousehold(); save(); }
+if (state.members.some(m => !('aspiration' in m))) { const used = new Set(); state.members.forEach(m => { if (!('aspiration' in m)) m.aspiration = rollAspiration(m.stage, used); }); save(); }
 render();
 
 $('#toolbar').addEventListener('submit', e => {
@@ -785,12 +800,14 @@ $('#toolbar').addEventListener('submit', e => {
   $('#copyFallback').hidden = true;
 });
 $('#rerollFamily').addEventListener('click', () => { state = { ...state, ...newFamily(true) }; save(); render(); });
-$('#rerollTraits').addEventListener('click', () => { state.members.forEach(m => { m.traits = rollTraits(m.stage); }); save(); render(); });
+$('#rerollTraits').addEventListener('click', () => { const used = new Set(); state.members.forEach(m => { m.traits = rollTraits(m.stage); m.aspiration = rollAspiration(m.stage, used); }); save(); render(); });
 $('#rerollLot').addEventListener('click', () => { state.lot = buildLot(state.members.length); save(); render(); });
 $('#members').addEventListener('click', e => {
   const b = e.target.closest('[data-reroll]'); if (!b) return;
   const m = state.members[+b.dataset.reroll];
-  m.traits = rollTraits(m.stage); save(); render();
+  m.traits = rollTraits(m.stage);
+  m.aspiration = rollAspiration(m.stage, new Set(state.members.filter(x => x !== m).map(x => x.aspiration)));
+  save(); render();
   const again = document.querySelector(`[data-reroll="${b.dataset.reroll}"]`); if (again) again.focus();
 });
 $('#copyBtn').addEventListener('click', () => copyText(asText()));

@@ -1,6 +1,6 @@
 # Meldunek Simów
 
-Generator rodzin do The Sims 4. Losuje gospodarstwo domowe z krótką historią przeprowadzki, cechy każdego domownika oraz działkę, na którą się wprowadzą: świat, wielkość, budżet, cechy działki, budynek i jego stan. Każdą część można przelosować osobno, a cechy pojedynczej osoby jednym przyciskiem.
+Generator rodzin do The Sims 4. Losuje gospodarstwo domowe z krótką historią przeprowadzki, cechy i aspirację każdego domownika oraz działkę, na którą się wprowadzą: świat, wielkość, budżet, cechy działki, budynek i jego stan. Każdą część można przelosować osobno, a cechy i aspirację pojedynczej osoby jednym przyciskiem.
 
 ## Jak używać
 
@@ -12,7 +12,7 @@ W panelu „Moje dodatki” odznacz dodatki, których nie masz. Generator nie wy
 
 Imiona, nazwiska, cechy, światy, cechy działek, budynki i historie są zwykłymi listami na początku skryptu w `index.html`. Żeby coś dodać, dopisz kolejną pozycję do listy.
 
-Nazwy cech, światów, cech działek i dodatków są po angielsku, tak jak w angielskiej wersji gry.
+Nazwy cech, aspiracji, światów, cech działek i dodatków są po angielsku, tak jak w angielskiej wersji gry.
 
 ## Zastrzeżenie
 
